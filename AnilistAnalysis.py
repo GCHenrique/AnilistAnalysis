@@ -14,7 +14,6 @@ def get_completed(df: pd.DataFrame) -> pd.DataFrame:
 def get_both_list_same_animes(
     list1: pd.DataFrame, list2: pd.DataFrame
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    # the return should be both lists with just the animes both list contain
     titles1 = set(list1["media.title.romaji"].dropna())
     titles2 = set(list2["media.title.romaji"].dropna())
 
@@ -25,6 +24,7 @@ def get_both_list_same_animes(
         .drop_duplicates(subset="media.title.romaji", keep="first")
         .copy()
     )
+
     filtered2 = (
         list2[list2["media.title.romaji"].isin(common_titles)]
         .drop_duplicates(subset="media.title.romaji", keep="first")
@@ -37,12 +37,19 @@ def get_both_list_same_animes(
 def get_only_with_scores(df: pd.DataFrame) -> pd.DataFrame:
     new_df = df[df["score"].notna() & df["score"] != 0].copy()
     new_df = normalize_scores(new_df)
-    return new_df
+    return new_df  # anilist scores default to zero when they are not given a specific value.
+    # this would break the correlation so I removed it (and NaN for good measure)
 
 
-def normalize_scores(df: pd.DataFrame) -> pd.DataFrame:
+def normalize_scores(
+    df: pd.DataFrame,
+) -> pd.DataFrame:  # because anilist scores can come in 0-10, 0-100 and 0-3 format
     max_score = df["score"].max()
-    if max_score <= 10:
+
+    if max_score <= 3:
+        df = df.copy()
+        df["score"] = df["score"] * (100 / 3)
+    elif max_score <= 10:
         df = df.copy()
         df["score"] = df["score"] * 10
 
@@ -74,6 +81,7 @@ url = "https://graphql.anilist.co"
 
 username1 = input("Input username: ")
 username2 = input("Input second username: ")
+
 variables1 = {"username": username1}
 variables2 = {"username": username2}
 
@@ -108,12 +116,9 @@ df2_completed = get_completed(df2)
 df1_filtered = get_only_with_scores(df1_completed)
 df2_filtered = get_only_with_scores(df2_completed)
 
-del df1_completed, df2_completed
+del df1_completed, df2_completed  # freeing space in memory
 
 df1_filtered, df2_filtered = get_both_list_same_animes(df1_filtered, df2_filtered)
-
-print(df1_filtered)
-print(df2_filtered)
 
 if df1_filtered.empty:
     print("There are no anime in common")
@@ -121,6 +126,8 @@ if df1_filtered.empty:
 
 df1_filtered_scores = df1_filtered["score"].to_numpy()
 df2_filtered_scores = df2_filtered["score"].to_numpy()
+
+del df1_filtered, df2_filtered  # again freeing space in memory
 
 try:
     df1_filtered_scores = (
@@ -131,14 +138,9 @@ try:
         df2_filtered_scores - df2_filtered_scores.mean()
     ) / df2_filtered_scores.std(ddof=0)
 
-except ZeroDivisionError as e:
-    print(e)
+except ZeroDivisionError:
     df1_filtered_scores = df1_filtered_scores - df1_filtered_scores.mean()
     df2_filtered_scores = df2_filtered_scores - df2_filtered_scores.mean()
-# Normalization attempt. Maybe it's better to normalize using the Z formula (the variation is known)
-
-print(df1_filtered_scores)
-print(df2_filtered_scores)
 
 corr = np.corrcoef(df1_filtered_scores, df2_filtered_scores)[0, 1]
 beta, alpha = np.polyfit(df1_filtered_scores, df2_filtered_scores, 1)
