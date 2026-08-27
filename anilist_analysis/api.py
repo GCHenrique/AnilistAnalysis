@@ -6,28 +6,87 @@ class AnilistAPIError(Exception):
     pass
 
 
-def fetch_user_data(username: str) -> pd.DataFrame:
-    print(f"Fetching data for {username}")
-    QUERY_STRING = """
-    query ($username: String) {
-        MediaListCollection(userName: $username, type: ANIME) {
-            lists {
-                name
-                entries {
-                    media {
-                        title {
-                            romaji
+class FetchingError(Exception):
+    pass
+
+
+def get_query_string(type_query: str) -> str:
+    if type_query == "anime":
+        QUERY_STRING = """
+        query ($username: String) {
+            MediaListCollection(userName: $username, type: ANIME) {
+                lists {
+                    name
+                    entries {
+                        media {
+                            title {romaji}
+                            meanScore
+                            status
+                            countryOfOrigin
+                            duration
+                            episodes
+                            isFavourite
                         }
-                        meanScore
+                        score(format: POINT_100)
                         status
+                        repeat
+                        progress
                     }
-                    score
-                    status
                 }
             }
         }
-    }
-    """
+        """
+        '''
+
+        QUERY_STRING = """
+            query ($username: String) {
+                MediaListCollection(userName: $username, type: ANIME) {
+                    lists {
+                        entries{
+                            media {
+                                studios(isMain:true){nodes{name}}
+                            }
+                        }
+                    }
+                } 
+
+            }                
+        '''
+
+    elif type_query == "manga":
+        QUERY_STRING = """
+        query ($username: String) {
+            MediaListCollection(userName: $username, type: MANGA) {
+                lists {
+                    name
+                    entries {
+                        media{
+                            title {romaji}
+                            status
+                            countryOfOrigin
+                            chapters
+                            isFavourite
+                        }
+                        score(format:POINT_100)
+                        status
+                        repeat
+                        progress
+                    }
+                }
+            }
+        }
+        """
+
+    else:
+        raise FetchingError("Media type not supported or non-existent")
+
+    return QUERY_STRING
+
+
+def fetch_user_data(username: str, type_query: str) -> pd.DataFrame:
+    print(f"\nFetching data for {username}")
+
+    QUERY_STRING = get_query_string(type_query)
 
     URL = "https://graphql.anilist.co"
 

@@ -15,38 +15,22 @@ def get_both_list_same_animes(
 
     common_titles = titles1.intersection(titles2)
 
-    filtered1 = (
-        list1[list1["media.title.romaji"].isin(common_titles)]
-        .drop_duplicates(subset="media.title.romaji", keep="first")
-        .copy()
-    )
+    filtered1 = list1[list1["media.title.romaji"].isin(common_titles)].copy()
+    filtered2 = list2[list2["media.title.romaji"].isin(common_titles)].copy()
 
-    filtered2 = (
-        list2[list2["media.title.romaji"].isin(common_titles)]
-        .drop_duplicates(subset="media.title.romaji", keep="first")
-        .copy()
-    )
+    filtered1 = remove_duplicates(filtered1)
+    filtered2 = remove_duplicates(filtered2)
 
     return filtered1, filtered2
 
 
+def remove_duplicates(df: pd.DataFrame) -> pd.DataFrame:
+    df_filtered = df.drop_duplicates(subset="media.title.romaji", keep="first").copy()
+
+    return df_filtered
+
+
 def get_only_with_scores(df: pd.DataFrame) -> pd.DataFrame:
-    new_df = df[df["score"].notna() & df["score"] != 0].copy()
-    new_df = normalize_scores(new_df)
+    new_df = df[(df["score"].notna()) & (df["score"] != 0)].copy()
     return new_df  # anilist scores default to zero when they are not given a specific value.
     # this would break the correlation so I removed it (and NaN for good measure)
-
-
-def normalize_scores(
-    df: pd.DataFrame,
-) -> pd.DataFrame:  # because anilist scores can come in 0-10, 0-100 and 0-3 format
-    max_score = df["score"].max()
-
-    if max_score <= 3:
-        df = df.copy()
-        df["score"] = df["score"] * (100 / 3)
-    elif max_score <= 10:
-        df = df.copy()
-        df["score"] = df["score"] * 10
-
-    return df

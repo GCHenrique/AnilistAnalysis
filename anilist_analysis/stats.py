@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 
 def normalize_to_Z(np_list: np.ndarray):
@@ -19,6 +20,32 @@ def get_correlations(
     x = np.linspace(array1.min(), array1.max(), 100)
     y = alpha + beta * x
 
-    print(f"Correlation found: {corr: .4f}")
+    print(f"\nCorrelation found: {corr: .4f}")
 
     return corr, x, y
+
+
+def get_maximum_media(df: pd.DataFrame) -> tuple[int, list]:
+    score = df["score"].max()  # probably 100 but whatever
+    media = df[df["score"] == score]["media.title.romaji"].tolist()
+
+    return score, media
+
+
+def get_minimum_media(df: pd.DataFrame) -> tuple[int, list]:
+    score = df["score"].min()
+
+    media = df[df["score"] == score]["media.title.romaji"].tolist()
+
+    return score, media
+
+
+def get_score_basics(df: pd.DataFrame) -> tuple[float, float, float]:
+    if df.empty:
+        return None
+
+    mean = df["score"].mean()
+    std = df["score"].std(ddof=0)
+    median = df["score"].median()
+
+    return std, mean, median
