@@ -3,7 +3,11 @@ from . import clean
 from . import stats
 from . import plots
 
-import sys
+import os
+
+
+class PipelineError(Exception):
+    pass
 
 
 def run_user_summary(media_type: str, username: str) -> str:
@@ -81,22 +85,17 @@ def run_comparison_2(media_type: str, username1: str, username2: str):
     df1_filtered = clean.get_only_with_scores(df1_completed)
     df2_filtered = clean.get_only_with_scores(df2_completed)
 
-    del df1_completed, df2_completed  # freeing space in memory
-
     df1_filtered, df2_filtered = clean.get_both_list_same_animes(
         df1_filtered, df2_filtered
     )
 
     if df1_filtered.empty:
-        print(f"There are no {media_type} in common")
-        sys.exit(0)
+        raise PipelineError(f"There are no {media_type} in common")
 
     print(f"\n{len(df1_filtered)} {media_type} in common found")
 
     df1_filtered_scores = df1_filtered["score"].to_numpy()
     df2_filtered_scores = df2_filtered["score"].to_numpy()
-
-    del df1_filtered, df2_filtered  # again freeing space in memory
 
     df1_filtered_scores = stats.normalize_to_Z(df1_filtered_scores)
     df2_filtered_scores = stats.normalize_to_Z(df2_filtered_scores)
@@ -108,5 +107,6 @@ def run_comparison_2(media_type: str, username1: str, username2: str):
 
 def save_text_results(argument: str, filename: str):
     print("\nSaving result to text file")
+    os.makedirs("results", exist_ok=True)
     with open(filename, "w") as f:
         f.write(argument)
