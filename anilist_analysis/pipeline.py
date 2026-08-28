@@ -1,13 +1,9 @@
+import os
+
 from . import api
 from . import clean
 from . import stats
 from . import plots
-
-import os
-
-
-class PipelineError(Exception):
-    pass
 
 
 def run_user_summary(media_type: str, username: str) -> str:
@@ -90,7 +86,8 @@ def run_comparison_2(media_type: str, username1: str, username2: str):
     )
 
     if df1_filtered.empty:
-        raise PipelineError(f"There are no {media_type} in common")
+        print(f"There are no {media_type} in common")
+        return
 
     print(f"\n{len(df1_filtered)} {media_type} in common found")
 

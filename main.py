@@ -1,6 +1,5 @@
 from anilist_analysis import pipeline
 from anilist_analysis.api import AnilistAPIError, FetchingError
-from anilist_analysis.pipeline import PipelineError
 from requests.exceptions import ConnectionError, HTTPError
 
 # Add support to choose type of media
@@ -43,9 +42,6 @@ def main():
         print(f"HTTP error occurred: {e}")
 
     except FetchingError as e:
-        print(e)
-
-    except PipelineError as e:
         print(e)
 
 if __name__ == "__main__":
